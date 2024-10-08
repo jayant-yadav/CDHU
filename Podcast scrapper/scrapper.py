@@ -9,16 +9,25 @@ from bs4 import BeautifulSoup
 
 def scrape_podcast(podcast_url):
     # Directory to save the downloaded mp3 files
-    download_dir = "./podcast_episodes"
+    base_url = podcast_url.rsplit('/', 1)[-1]
+    download_dir = f"./podcast_episodes/{base_url}"
     os.makedirs(download_dir, exist_ok=True)
 
     # Scrape the podcast page for the RSS feed URL
     response = requests.get(podcast_url)
     soup = BeautifulSoup(response.content, 'html.parser')
-    rss_link = soup.find_all('a', href=re.compile("https://api.sr.se/api/rss/pod/itunes"))
+
+    # Find the anchor tag containing the span with text "Rss"
+    rss_link = None
+    for a_tag in soup.find_all('a', href=True):
+        span = a_tag.find('span')
+        if span and 'Rss' in span.get_text():
+            rss_link = a_tag['href']
+            break
 
     if rss_link:
-        rss_feed_url = rss_link[0].get('href')
+        # rss_feed_url = rss_link[0].get('href')
+        rss_feed_url = rss_link
     else:
         raise ValueError("RSS feed URL not found")
 
@@ -36,8 +45,10 @@ def scrape_podcast(podcast_url):
         enclosure = item.find('enclosure')
         if enclosure and enclosure.get('type') == 'audio/mpeg':
             mp3_count += 1
+            if mp3_count == 5: #REMOVE THIS LINE TO DOWNLOAD ALL EPISODES
+                break
             mp3_url = enclosure.get('url')
-            mp3_filename = os.path.join(download_dir, os.path.basename(mp3_url))
+            mp3_filename = os.path.join(download_dir, f"{mp3_count}_{os.path.basename(mp3_url)}")
 
             # Download the mp3 file
             with requests.get(mp3_url, stream=True) as r:
