@@ -26,7 +26,6 @@ def scrape_podcast(podcast_url):
             break
 
     if rss_link:
-        # rss_feed_url = rss_link[0].get('href')
         rss_feed_url = rss_link
     else:
         raise ValueError("RSS feed URL not found")
