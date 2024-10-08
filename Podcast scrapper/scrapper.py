@@ -29,11 +29,23 @@ def scrape_podcast(podcast_url):
     # Parse the RSS feed
     soup = BeautifulSoup(rss_feed_content, 'xml')
     items = soup.find_all('item')
+    mp3_count = 0
 
     # Download each mp3 file from the RSS feed
     for item in items:
-        # Your code to download mp3 files goes here
-        pass
+        enclosure = item.find('enclosure')
+        if enclosure and enclosure.get('type') == 'audio/mpeg':
+            mp3_count += 1
+            mp3_url = enclosure.get('url')
+            mp3_filename = os.path.join(download_dir, os.path.basename(mp3_url))
+
+            # Download the mp3 file
+            with requests.get(mp3_url, stream=True) as r:
+                r.raise_for_status()
+                with open(mp3_filename, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):  # 8192 bytes = 8 KB
+                        f.write(chunk)
+            print(f"Downloaded {mp3_count}: {mp3_filename}")
 
 if __name__ == "__main__":
     podcast_url = "https://poddtoppen.se/podcast/1680705190/i-hjarnan-pa-louise-epstein"
